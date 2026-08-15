@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ai-devops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: itsharshpaliwal/ai-devops-backend:1.2
+          ports:
+            - containerPort: 8000
+          env:
+            - name: KUBECONFIG
+              value: /root/.kube/config
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: /root/.kube
+              readOnly: true
+            - name: kubectl
+              mountPath: /usr/local/bin/kubectl
+              readOnly: true
+      volumes:
+        - name: kubeconfig
+          hostPath:
+            path: /home/azureuser/.kube
+            type: Directory
+        - name: kubectl
+          hostPath:
+            path: /usr/local/bin/kubectl
+            type: File
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: ai-devops
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: NodePort
