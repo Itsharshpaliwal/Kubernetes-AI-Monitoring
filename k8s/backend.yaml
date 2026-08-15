@@ -13,30 +13,49 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: backend-sa
+
       containers:
-        - name: backend
-          image: itsharshpaliwal/ai-devops-backend:1.2
+        - name: ai-devops-backend
+          image: itsharshpaliwal/ai-devops-backend:3.1
+          imagePullPolicy: IfNotPresent
+
           ports:
             - containerPort: 8000
+
           env:
-            - name: KUBECONFIG
-              value: /root/.kube/config
-          volumeMounts:
-            - name: kubeconfig
-              mountPath: /root/.kube
-              readOnly: true
-            - name: kubectl
-              mountPath: /usr/local/bin/kubectl
-              readOnly: true
-      volumes:
-        - name: kubeconfig
-          hostPath:
-            path: /home/azureuser/.kube
-            type: Directory
-        - name: kubectl
-          hostPath:
-            path: /usr/local/bin/kubectl
-            type: File
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: JWT_SECRET
+
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-devops-secrets
+                  key: OPENROUTER_API_KEY
+
+            - name: DATABASE_URL
+              value: postgresql+psycopg2://ai_devops:change-this-password@postgres:5432/ai_devops
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
 
 ---
 apiVersion: v1
