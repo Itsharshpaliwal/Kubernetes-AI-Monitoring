@@ -1,8 +1,6 @@
 from fastapi import APIRouter
-from kubernetes import client
+from kubernetes import client, config
 from loguru import logger
-
-from app.kubernetes.config_loader import load_kubernetes_config
 
 router = APIRouter(
     prefix="/pods",
@@ -10,10 +8,17 @@ router = APIRouter(
 )
 
 
+def load_kubernetes():
+    try:
+        config.load_incluster_config()
+    except config.ConfigException:
+        config.load_kube_config()
+
+
 @router.get("")
 async def get_pods():
     try:
-        load_kubernetes_config()
+        load_kubernetes()
 
         v1 = client.CoreV1Api()
 
